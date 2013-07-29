@@ -1,0 +1,26 @@
+#!/bin/bash
+
+umask 0022
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
+ 
+backupdir="/srv/backup/mysql"
+my_cnf="/usr/local/bin/backups/.my.cnf"
+ 
+if [ ! -d $backupdir ]; then
+        mkdir -p $backupdir
+  chown backup_user:Admins $backupdir && chmod 0700 $backupdir
+fi
+ 
+case $1 in
+        run)
+		mysql_databases=$(mysql --defaults-file=$my_cnf -e 'show databases' |tr -d '| ' |grep -v 'Database' |grep -v 'information_schema')
+                for db in $mysql_databases; do
+                        mysqldump --defaults-file=$my_cnf --max_allowed_packet=512MB $db |gzip > $backupdir/$db.sql.gz
+                done
+        ;;
+ 
+        clean)
+                rm -f $backupdir/*.sql.gz
+        ;;
+esac
